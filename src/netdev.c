@@ -1,5 +1,10 @@
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/netdevice.h>
 #include <linux/init.h>
+#include <linux/ip.h>
+#include <net/ip.h>
+#include <linux/icmp.h>
 #include <linux/net_tstamp.h>
 #include <linux/u64_stats_sync.h>
 #include <linux/if_arp.h>
@@ -11,9 +16,61 @@
 
 static netdev_tx_t my_vif_xmit(struct sk_buff *skb, struct net_device *dev)
 {
-	dev_lstats_add(dev, skb->len);
+	skb_set_network_header(skb, 0);
+	struct iphdr *iph = ip_hdr(skb);
+	pr_debug("Received packet to %pI4\n", &iph->daddr);
 
-	skb_tx_timestamp(skb);
+	if (skb->len < sizeof(struct iphdr) || iph->protocol != IPPROTO_ICMP) {
+        dev_kfree_skb(skb);
+        return NETDEV_TX_OK;
+    }
+
+	struct my_vif_priv *priv = netdev_priv(dev);
+	if (iph->daddr != priv->target_ip)
+	{
+		dev_kfree_skb(skb);
+    	return NETDEV_TX_OK;
+	}
+
+	if (skb_cow_head(skb, 0) != 0) {
+        dev_kfree_skb(skb);
+        return NETDEV_TX_OK;
+    }
+
+	iph = ip_hdr(skb);
+	skb_set_transport_header(skb, ip_hdrlen(skb));
+
+	if (skb->len < ip_hdrlen(skb) + sizeof(struct icmphdr))
+	{
+		dev_kfree_skb(skb);
+        return NETDEV_TX_OK;
+	}
+
+	struct icmphdr *icmph = icmp_hdr(skb);
+
+	if (icmph->type == ICMP_ECHO) {
+		pr_debug("Echo Request");
+
+		swap(iph->saddr, iph->daddr);
+		icmph->type = ICMP_ECHOREPLY;
+
+		ip_send_check(iph);
+
+		icmph->checksum = 0;
+		icmph->checksum = ip_compute_csum(icmph, skb->len - ip_hdrlen(skb));
+		
+		skb->protocol = htons(ETH_P_IP);
+        skb->dev = dev;
+        
+		skb_reset_network_header(skb);
+		skb->ip_summed = CHECKSUM_NONE;
+
+        dev_lstats_add(dev, skb->len);
+        netif_rx(skb);
+
+        return NETDEV_TX_OK;
+	}
+
 	dev_kfree_skb(skb);
 	return NETDEV_TX_OK;
 }
