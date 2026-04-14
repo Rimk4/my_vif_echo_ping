@@ -5,7 +5,7 @@ MY_PWD := $(shell pwd)
 
 MODULE_NAME := my_vif_echo_ping
 
-$(MODULE_NAME)-y := src/main.o src/netdev.o
+$(MODULE_NAME)-y := src/main.o src/netdev.o src/proc.o
 
 obj-m += $(MODULE_NAME).o
 

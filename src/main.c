@@ -4,6 +4,7 @@
 #include <linux/rtnetlink.h>
 #include <net/rtnetlink.h>
 
+#include "proc.h"
 #include "common.h"
 
 
@@ -31,25 +32,23 @@ static int __init my_vif_init_module(void)
 {
 	int err = 0;
 
-	err = rtnl_link_register(&my_vif_link_ops);
+	err = my_vif_proc_net_init();
 	if (err < 0)
 		return err;
 
-    /*
-    err = my_vif_proc_init();
-    if (err < 0) {
-        // ВОТ ЗДЕСЬ нам нужно будет сделать отмену Шага 1
-        rtnl_link_unregister(&my_vif_link_ops);
-        return err;
-    }
-    */
+	err = rtnl_link_register(&my_vif_link_ops);
+	if (err < 0) {
+		my_vif_proc_net_exit();
+		return err;
+	}
 
-    return 0;
+	return 0;
 }
 
 static void __exit my_vif_cleanup_module(void)
 {
 	rtnl_link_unregister(&my_vif_link_ops);
+	my_vif_proc_net_exit();
 }
 
 module_init(my_vif_init_module);
