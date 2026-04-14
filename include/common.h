@@ -1,11 +1,11 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <linux/mutex.h>
 #include <linux/types.h>
 
 
 struct net_device;
-struct sk_buff;
 
 struct my_vif_priv
 {
