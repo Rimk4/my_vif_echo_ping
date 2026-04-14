@@ -1,0 +1,8 @@
+PROJECT_NAME           = "My VIF Echo Ping"
+INPUT                  = .
+RECURSIVE              = YES
+OPTIMIZE_OUTPUT_FOR_C  = YES
+EXTRACT_STATIC         = YES
+GENERATE_HTML          = YES
+HTML_OUTPUT            = docs
+GENERATE_LATEX         = NO
