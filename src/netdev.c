@@ -61,32 +61,42 @@ static netdev_tx_t my_vif_xmit(struct sk_buff *skb, struct net_device *dev)
 
 	struct icmphdr *icmph = icmp_hdr(skb);
 
+	// если тип icpm протокола - запрос
 	if (icmph->type == ICMP_ECHO) {
 		pr_debug("Echo Request");
 
+		// меняем местами адреса отправителя и получателя
 		swap(iph->saddr, iph->daddr);
+		// меняем с типа запрос на тип ответ
 		icmph->type = ICMP_ECHOREPLY;
 
+		// пересчёт контрольной суммы
 		ip_send_check(iph);
 
 		icmph->checksum = 0;
 		icmph->checksum = ip_compute_csum(icmph, skb->len - ip_hdrlen(skb));
 
+		// установка типа протокола ipv4
 		skb->protocol = htons(ETH_P_IP);
+		// привязка устройства
 		skb->dev = dev;
 
+		// сброс указателя skb->data
 		skb_reset_network_header(skb);
+		// отключение аппартаной проверки контрольной суммы
 		skb->ip_summed = CHECKSUM_NONE;
 
+		// добавляем статистику передачи
 		dev_lstats_add(dev, skb->len);
-		netif_rx(skb);
+		// отправляем в сетевой стек ядра
 		if (netif_rx(skb) != NET_RX_SUCCESS) {
-			dev->stats.rx_dropped++;
+			dev->stats.tx_dropped++;
 		}
 
 		return NETDEV_TX_OK;
 	}
 
+	// освободжение skb
 	dev_kfree_skb(skb);
 	return NETDEV_TX_OK;
 }
