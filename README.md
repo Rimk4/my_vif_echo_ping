@@ -36,14 +36,34 @@ make KCFLAGS="-DDEBUG"
 make clean
 ```
 
-# Пример сценария
-insmod /mnt/boot/my_vif_echo_ping.ko
+# my_vif_echo_ping - драйвер виртуального сетевого интерфейса
 
+## IP-адрес по умолчанию
+
+По умолчанию драйвер отвечает на ping для IP-адреса **192.168.1.231**
+
+### Загрузка модуля и создание интерфейса
+```bash
+insmod my_vif_echo_ping.ko
 ip link add vping0 type my_vif_echo_ping
 ip addr add 192.168.1.230/32 dev vping0
 ip link set vping0 up
 ip route add 192.168.1.231 dev vping0
-ping 192.168.1.231
+```
+
+### Изменение целевого IP через procfs
+```
+echo "192.168.1.100" > /proc/net/myvif/vping0
+cat /proc/net/myvif/vping0
+```
+
+### Добавление маршрута для нового IP
+```
+ip route add 192.168.1.100 dev vping0
+ping 192.168.1.100
+```
+
+# Пример сценария
 ```
 # mount /dev/mmcblk0p1 /mnt/boot/
 [   23.022779] FAT-fs (mmcblk0p1): Volume was not properly unmounted. Some data may be corrupt. Please run fsck.
