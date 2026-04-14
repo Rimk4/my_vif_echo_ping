@@ -54,5 +54,5 @@ static void __exit my_vif_cleanup_module(void)
 module_init(my_vif_init_module);
 module_exit(my_vif_cleanup_module);
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("Dummy netdevice driver which discards all packets sent to it");
+MODULE_DESCRIPTION("Virtual VIF driver with ICMP Echo Reply emulation and procfs control");
 MODULE_ALIAS_RTNL_LINK(DRV_NAME);
